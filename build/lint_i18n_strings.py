@@ -15,6 +15,7 @@ files in place wherever possible. The user will be prompted to clear
 up any ambiguities as well.
 """
 
+
 import argparse
 import copy
 import re
@@ -62,7 +63,7 @@ _FUNCTION_RE = re.compile(r'^\s*(\w+)\(.*\)\s*$')
 # as a direct child node. Additionally we make sure the node isn't inside
 # of a node that matches the same criteria.
 _HAS_TEXT = './text()[normalize-space(.)!=""]'
-_XPATH_FIND_NODES = '//*[%s][not(ancestor::*[%s])]' % (_HAS_TEXT, _HAS_TEXT)
+_XPATH_FIND_NODES = f'//*[{_HAS_TEXT}][not(ancestor::*[{_HAS_TEXT}])]'
 
 # All the tags that we want to make sure that strings don't contain
 _REJECT_NODES = [
@@ -223,9 +224,6 @@ def lint_file(filename, apply_fix, verbose):
           were changed by the script (or could've been changed, if the
           apply_fix flag is set to False).
     """
-    # A list of all the errors that occurred
-    errors = []
-
     # Keep track of how many nodes have changed in the document
     # (Used to figure out if we need to write out a new version of the file)
     nodes_changed = 0
@@ -252,17 +250,19 @@ def lint_file(filename, apply_fix, verbose):
     bad_nodes = _REJECT_NODES + _CANNOT_CONTAIN_NODES
 
     # Construct an XPath expression for finding rejected nodes
-    lint_expr = "|".join([".//%s" % name for name in bad_nodes])
+    lint_expr = "|".join([f".//{name}" for name in bad_nodes])
 
+    errors = []
     for node in nodes:
         # If we're linting the file and the string doesn't contain any
         # rejected nodes then we just ignore it
         lint_nodes = node.xpath(lint_expr)
 
-        for lint_node in lint_nodes:
-            errors.append("Contains invalid node:\n%s\nInvalid node:\n%s" % (
-                _get_outerhtml(node), _get_outerhtml(lint_node)))
-
+        errors.extend(
+            "Contains invalid node:\n%s\nInvalid node:\n%s"
+            % (_get_outerhtml(node), _get_outerhtml(lint_node))
+            for lint_node in lint_nodes
+        )
     # A second kind of error is when we have an <span
     # data-if="isSingular(...)"> that doesn't have natural language
     # (or another isSingular) inside it -- that is, it has nested
@@ -271,14 +271,14 @@ def lint_file(filename, apply_fix, verbose):
     _IS_SINGULAR = '*[contains(@data-if,"isSingular")]'
     # "isSingular" nodes which don't contain text directly and don't
     # contain at least one "isSingular" child node.
-    search_expr = '//%s[not(%s)][not(./%s)]' % (_IS_SINGULAR, _HAS_TEXT,
-                                                _IS_SINGULAR)
+    search_expr = f'//{_IS_SINGULAR}[not({_HAS_TEXT})][not(./{_IS_SINGULAR})]'
     non_bottom_level_issingular = html_tree.xpath(search_expr)
-    for lint_node in non_bottom_level_issingular:
-        errors.append("'isSingular' nodes must contain text directly;"
-                      " distribute this node into its children:\n%s" % (
-                          _get_outerhtml(lint_node)))
-
+    errors.extend(
+        "'isSingular' nodes must contain text directly;"
+        " distribute this node into its children:\n%s"
+        % (_get_outerhtml(lint_node))
+        for lint_node in non_bottom_level_issingular
+    )
     # And now we run the nodes through all of our fixable filters. These
     # filters detect nodes that can be automatically fixed (and fixes them
     # if the apply_fix flag is set to True). It also detects nodes that
@@ -335,9 +335,9 @@ def lint_file(filename, apply_fix, verbose):
         else:
             # Consider it to be an error when there are nodes that need
             # fixing and we haven't run with --fix
-            errors.append(('%s node%s need to be fixed. '
-                'Re-run with --fix to automatically fix them.' % (
-                    nodes_changed, "" if nodes_changed == 1 else "s")))
+            errors.append(
+                f'{nodes_changed} node{"" if nodes_changed == 1 else "s"} need to be fixed. Re-run with --fix to automatically fix them.'
+            )
 
     return (errors, nodes_changed)
 
@@ -416,8 +416,9 @@ class BaseFilter(object):
         Returns a list of nodes.
         """
         # Construct an XPath expression for finding nodes to fix
-        fix_expr = '|'.join(['.//%s[%s]' % (name, self.xpath)
-            for name in _INLINE_SCRIPT_NODES])
+        fix_expr = '|'.join(
+            [f'.//{name}[{self.xpath}]' for name in _INLINE_SCRIPT_NODES]
+        )
 
         return node.xpath(fix_expr)
 
@@ -444,11 +445,7 @@ class BaseFilter(object):
         """
         # Loop through the fixable var nodes
         for var_node in fixable_vars:
-            # Extract parts of the code element's inner contents for
-            # further processing.
-            match = self.get_match(var_node)
-
-            if match:
+            if match := self.get_match(var_node):
                 # Process the fixable var
                 if self.filter_var(match, var_node):
                     # Keep a tally of nodes that've been changed
@@ -565,16 +562,8 @@ class IfElseFilter(BaseFilter):
         match_keys = set()
 
         for var_node in fixable_vars:
-            # Extract parts of the code element's inner contents for
-            # further processing.
-            match = self.get_match(var_node)
-
-            if match:
-                # Extract the key from the string (if it exists)
-                key = self.extract_key(match)
-
-                # If a key was extracted then add it to the set
-                if key:
+            if match := self.get_match(var_node):
+                if key := self.extract_key(match):
                     match_keys.add(key)
 
         self.match_keys = list(match_keys)
@@ -593,12 +582,7 @@ class IfElseFilter(BaseFilter):
 
         Returns True if the node can be modified, False if not.
         """
-        # Get the class from the element
-        className = node.get('class')
-
-        # If the node has a class and contains one of the blacklisted names
-        # then we immediately fail.
-        if className:
+        if className := node.get('class'):
             for banned_class in self._blacklist_classes:
                 if banned_class in className:
                     return False
@@ -618,18 +602,17 @@ class IfElseFilter(BaseFilter):
 
         if self.can_have_if(orig_node):
             return super(IfElseFilter, self).replace_node(orig_node, node)
-        else:
-            # Remove all child nodes within the original element
-            for child_node in orig_node.iterchildren():
-                orig_node.remove(child_node)
+        # Remove all child nodes within the original element
+        for child_node in orig_node.iterchildren():
+            orig_node.remove(child_node)
 
-            # Clear any remaining text
-            orig_node.text = ''
+        # Clear any remaining text
+        orig_node.text = ''
 
-            # And insert the newly-created node into position
-            orig_node.append(node)
+        # And insert the newly-created node into position
+        orig_node.append(node)
 
-            return node
+        return node
 
     def copy_node(self, orig_node):
         """Copy the node only if it can't have an data-if added to it.
@@ -640,28 +623,27 @@ class IfElseFilter(BaseFilter):
         if self.can_have_if(orig_node):
             # Run the BaseFilter copy_node
             return super(IfElseFilter, self).copy_node(orig_node)
-        else:
-            # We clone the node to make sure we don't unintentionally modify
-            # the original node.
-            node = copy.deepcopy(orig_node)
-            node.tail = ''
+        # We clone the node to make sure we don't unintentionally modify
+        # the original node.
+        node = copy.deepcopy(orig_node)
+        node.tail = ''
 
-            # Change the tag names to just be a boring 'span'
-            node.tag = self.cloned_node.tag = 'span'
+        # Change the tag names to just be a boring 'span'
+        node.tag = self.cloned_node.tag = 'span'
 
-            # Remove all existing attributes on both the original and the
-            # cloned node
-            for attr in node.attrib:
-                node.attrib.pop(attr)
-            for attr in self.cloned_node.attrib:
-                self.cloned_node.attrib.pop(attr)
+        # Remove all existing attributes on both the original and the
+        # cloned node
+        for attr in node.attrib:
+            node.attrib.pop(attr)
+        for attr in self.cloned_node.attrib:
+            self.cloned_node.attrib.pop(attr)
 
-            # Set the data-unwrap attribute to get the exercise framework
-            # to automatically remove the <span> wrapper that we added
-            node.set('data-unwrap', '')
-            self.cloned_node.set('data-unwrap', '')
+        # Set the data-unwrap attribute to get the exercise framework
+        # to automatically remove the <span> wrapper that we added
+        node.set('data-unwrap', '')
+        self.cloned_node.set('data-unwrap', '')
 
-            return node
+        return node
 
     def get_condition(self, key):
         raise NotImplementedError('Subclasses must define this')
@@ -776,14 +758,11 @@ class AlwaysPluralFilter(BaseFilter):
         Will produce:
             <var>plural_form("", NUM)</var>
         """
-        # Handle the case where a raw string is used
-        str_match = _STRING_RE.match(match.group(2))
-        if str_match:
+        if str_match := _STRING_RE.match(match.group(2)):
             # In this case just convert it directly to its plural form
             # We do this by prompting the user for help translating to the
             # correct plural form.
             _replace_node(var_node, get_plural_form(str_match.group(1)))
-        # If the argument is a number
         elif get_is_plural_num(match):
             # Then we need to rewrite the function call so that it'll
             # be transformed into plural("", NUM), which will then be
@@ -939,7 +918,6 @@ class PluralFilter(IfElseFilter):
             # Replace the cloned node with the plural form of the word
             _replace_node(cloned_var, get_plural_form(word))
 
-        # If the second argument is a string
         elif second_str_match:
             # Get the word out of the string
             word = second_str_match.group(1).strip()
@@ -948,13 +926,11 @@ class PluralFilter(IfElseFilter):
             var_node.text = cloned_var.text = match.group(2).strip()
 
             # Insert the word after the singular <var>
-            var_node.tail = ' ' + word + (var_node.tail or '')
+            var_node.tail = f' {word}' + (var_node.tail or '')
 
             # Insert a space and the plural form of the word after the variable
-            cloned_var.tail = (' ' + get_plural_form(word) +
-                (cloned_var.tail or ''))
+            cloned_var.tail = (f' {get_plural_form(word)}' + (cloned_var.tail or ''))
 
-        # Otherwise both of the results are variables or function calls.
         else:
             # Get the position of the number variable from the match
             plural_num_pos = get_plural_num_pos(match)
@@ -1146,7 +1122,7 @@ class AnFilter(BaseFilter):
             A <var>item(1)</var>
         """
         # Get the text that we need to insert to replace the An usage
-        an_text = self._an_map[match.group(1).strip()] + ' '
+        an_text = f'{self._an_map[match.group(1).strip()]} '
 
         # We then insert the text 'A ' before the variable (which is
         # surprisingly hard to do)
@@ -1276,10 +1252,7 @@ class MathJaxTextFilter(BaseFilter):
         # only return the node if the text portion of this node contains the
         # \text{} (in particular, not if the text of one of its decendents
         # contains \text{})
-        if any('\\text{' in s for s in node.xpath('text()')):
-            return [node]
-        else:
-            return []
+        return [node] if any('\\text{' in s for s in node.xpath('text()')) else []
 
     @staticmethod
     def _javascript_dumps(d):
@@ -1296,9 +1269,7 @@ class MathJaxTextFilter(BaseFilter):
             { "NAME": "NAME", "TEXT": "TEXT" }
             => "{NAME: NAME, TEXT: TEXT}"
         """
-        return "{%s}" % (", ".join(
-            "%s: %s" % (k, v) for k, v in d.iteritems()
-        ))
+        return ("{%s}" % ", ".join(f"{k}: {v}" for k, v in d.iteritems()))
 
     @staticmethod
     def var_replace_builder(var_dict):
@@ -1404,14 +1375,10 @@ class MathJaxTextFilter(BaseFilter):
                         text_content)
 
                 # Re-build our string with the replacements
-                text_content = '%s + $._("%s", %s) + %s' % (
-                        start_quote.group(1),
-                        interp_string,
-                        MathJaxTextFilter._javascript_dumps(var_dict),
-                        end_quote.group(1))
+                text_content = f'{start_quote[1]} + $._("{interp_string}", {MathJaxTextFilter._javascript_dumps(var_dict)}) + {end_quote[1]}'
             else:
                 # Otherwise, just wrap in $._
-                text_content = '" + $._("%s") + "' % text_content
+                text_content = f'" + $._("{text_content}") + "'
 
         # Finally, re-assemble the entire thing
         return text_start + text_content + text_end
@@ -1460,10 +1427,9 @@ class MathJaxTextFilter(BaseFilter):
                         MathJaxTextFilter.var_replace_builder(var_dict),
                         text_content)
 
-                text_content = '<var>$._("%s", %s)</var>' % (interp_string,
-                        MathJaxTextFilter._javascript_dumps(var_dict))
+                text_content = f'<var>$._("{interp_string}", {MathJaxTextFilter._javascript_dumps(var_dict)})</var>'
             else:
-                text_content = '<var>$._("%s")</var>' % text_content
+                text_content = f'<var>$._("{text_content}")</var>'
 
         # Build the final string out of the new parts
         return text_start + text_content + text_end
@@ -1495,10 +1461,7 @@ class StringInVarFilter(BaseFilter):
 
     def find_fixable_vars(self, node):
         """Return the node if it has $._ in it"""
-        if '$._' in node.text:
-            return [node]
-        else:
-            return []
+        return [node] if '$._' in node.text else []
 
     def get_match(self, fix_node):
         """Return a match of a string that matches $._(...)"""
@@ -1528,8 +1491,10 @@ def get_plural_form(word):
     if word not in _PLURAL_FORMS:
         # Need to print the result so that it goes to stdout
         # If no input was provided then we default to: word + 's'
-        plural = prompt_user(('What is the plural form of "%s" [%ss]: ' %
-            (word, word)), default=word + 's')
+        plural = prompt_user(
+            f'What is the plural form of "{word}" [{word}s]: ',
+            default=f'{word}s',
+        )
 
         # Cache the plural form for later
         _PLURAL_FORMS[word] = plural
@@ -1569,19 +1534,18 @@ def get_plural_num_pos(match):
         if first_arg_num is False or second_arg_num is True:
             pos = 2
 
-        # If the second argument is a string or if the first argument is
-        # a number, then the first argument must be a number
         elif second_arg_num is False or first_arg_num is True:
             pos = 1
 
-        # Otherwise the case is ambiguous so we should consult the user
         else:
             # Prompt the user for information as to which argument is the one
             # that holds the string.
             # If the user provides no input then we default to the first
             # argument
-            pos = prompt_user(('Ambiguous: %s which is the number? ([1] 2) ' %
-                plural_str), default=1)
+            pos = prompt_user(
+                f'Ambiguous: {plural_str} which is the number? ([1] 2) ',
+                default=1,
+            )
 
         # Make sure that the number is an integer and not a string
         _PLURAL_NUM_POS[plural_str] = int(pos)
@@ -1611,8 +1575,9 @@ def get_is_plural_num(match):
             # Prompt the user for information as to which argument is the one
             # that holds the string.
             holds_num = prompt_user(
-                'Ambiguous: Does %s handle a number? (y/[n]) ' % plural_str,
-                default='n')
+                f'Ambiguous: Does {plural_str} handle a number? (y/[n]) ',
+                default='n',
+            )
 
             # If the user provides no input then we default to considering
             # the argument to be a string.
@@ -1647,13 +1612,7 @@ def _check_plural_arg_is_num(plural_arg):
         if var in plural_arg.upper():
             return False
 
-    # If it uses a var that's in our list of known number variables
-    for var in _num_vars:
-        if var in plural_arg.upper():
-            return True
-
-    # Otherwise we bail as we don't know the answer
-    return None
+    return next((True for var in _num_vars if var in plural_arg.upper()), None)
 
 
 def _check_plural_is_ambiguous(plural_arg):
@@ -1700,11 +1659,7 @@ def _check_plural_is_ambiguous(plural_arg):
     # If the argument is a function call
     # And it's one of the built-in string functions, then it's not ambiguous
     fn_match = _FUNCTION_RE.match(plural_arg)
-    if fn_match and fn_match.group(1) in _functions:
-        return False
-
-    # Otherwise the result is definitely ambiguous
-    return True
+    return not fn_match or fn_match.group(1) not in _functions
 
 
 def _extract_nodes(html_tree, filename):
@@ -1713,7 +1668,7 @@ def _extract_nodes(html_tree, filename):
     search_expr = _XPATH_FIND_NODES
 
     for name in _IGNORE_NODES:
-        search_expr += "[not(ancestor-or-self::%s)]" % name
+        search_expr += f"[not(ancestor-or-self::{name})]"
 
     # Return the matching nodes
     return html_tree.xpath(search_expr)
@@ -1804,11 +1759,7 @@ def get_page_html(html_tree):
         for k in keys:
             el.attrib[k] = attrs[k]
 
-    # For some reason the last child node in the body's whitespace
-    # constantly expands on every call so we just reduce it to an
-    # endline but only if it doesn't contain any non-whitespace.
-    body_child_nodes = html_tree.xpath('//body/*')
-    if body_child_nodes:
+    if body_child_nodes := html_tree.xpath('//body/*'):
         last_node = body_child_nodes[-1]
         if not last_node.tail or last_node.tail.isspace():
             last_node.tail = "\n"
@@ -1849,7 +1800,7 @@ def _clean_data_if(match):
     for entity, replace in _CLEAN_ENTITIES.iteritems():
         condition = condition.replace(entity, replace)
 
-    return 'data-if=%s%s%s' % (quote, condition, quote)
+    return f'data-if={quote}{condition}{quote}'
 
 
 def prompt_user(prompt, default=''):

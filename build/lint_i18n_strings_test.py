@@ -94,9 +94,9 @@ class LintStringsTest(unittest.TestCase):
         super(LintStringsTest, self).setUp()
         self.orig_dir = os.getcwd()
 
-        lint_i18n_strings.SHOW_PROMPT = False
         lint_i18n_strings.ERROR_AMBIGUOUS_PLURALS = True
 
+        lint_i18n_strings.SHOW_PROMPT = False
         # Make sure that we're always working from the build directory
         os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -108,9 +108,8 @@ class LintStringsTest(unittest.TestCase):
 
         # Keep backups of the contents of all the files
         for file_name, checks in TESTS.iteritems():
-            checks['test_file'] = os.path.join(_TMP_DIR, file_name) + '.html'
-            checks['output_file'] = (os.path.join(_TMP_DIR, file_name) +
-                '_output.html')
+            checks['test_file'] = f'{os.path.join(_TMP_DIR, file_name)}.html'
+            checks['output_file'] = f'{os.path.join(_TMP_DIR, file_name)}_output.html'
             checks['original'] = _slurp(checks['test_file'])
 
     def tearDown(self):
@@ -128,10 +127,14 @@ class LintStringsTest(unittest.TestCase):
         (errors, nodes_changed) = lint_i18n_strings.lint_file(test_file,
             apply_fix=False, verbose=False)
 
-        self.assertEqual(nodes_changed, checks['nodes_changed'],
-            '# of nodes changed differ in %s' % test_file)
-        self.assertEqual(errors, checks['errors'],
-            'Errors reported differ in %s' % test_file)
+        self.assertEqual(
+            nodes_changed,
+            checks['nodes_changed'],
+            f'# of nodes changed differ in {test_file}',
+        )
+        self.assertEqual(
+            errors, checks['errors'], f'Errors reported differ in {test_file}'
+        )
         self.assertEqual(_slurp(test_file), checks['original'],
             'Make sure that the output of the file did not change with '
             'apply_fix=False.')
@@ -140,8 +143,11 @@ class LintStringsTest(unittest.TestCase):
         (errors, nodes_changed) = lint_i18n_strings.lint_file(test_file,
             apply_fix=True, verbose=False)
 
-        self.assertEqual(nodes_changed, checks['nodes_changed'],
-            '# of nodes changed differ in %s' % test_file)
+        self.assertEqual(
+            nodes_changed,
+            checks['nodes_changed'],
+            f'# of nodes changed differ in {test_file}',
+        )
 
         real_errors = checks['errors']
         # If there are nodes changed, then the last error line disappears when
@@ -149,8 +155,9 @@ class LintStringsTest(unittest.TestCase):
         if checks['nodes_changed'] != 0:
             real_errors = real_errors[:-1]
 
-        self.assertEqual(errors, real_errors,
-            'These should be no errors in %s' % test_file)
+        self.assertEqual(
+            errors, real_errors, f'These should be no errors in {test_file}'
+        )
         self.assertEqual(_slurp(test_file), _slurp(checks['output_file']),
             'Make sure that the output of the file matches the expected '
             'output.')
