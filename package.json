@@ -13,6 +13,6 @@
         "cheerio": "^0.22.0",
         "jison": "0.4.13",
         "jshint": "^2.9.6",
-        "uglify-js": "2.6.0"
+        "uglify-js": "3.17.4"
     }
 }
