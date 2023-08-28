@@ -1,19 +1,24 @@
+/* TODO(csilvers): fix these lint errors (http://eslint.org/docs/rules): */
+/* eslint-disable comma-dangle, indent, max-len, no-undef, no-var, one-var */
+/* To fix, remove an entry above, run ka-lint, and fix errors. */
+
 /**
  * Event handlers for when problem history is being viewed.
+ *
+ * This happens in two situations currently:
+ * (1) viewing another user's exercises (e.g. a student)
+ * (2) The 'problem-out-of-order' banner is showing
+ * This is not well-tested code; it may currently be broken in one or both
+ * or these situations!
  */
 
 (function() {
 
-$(Exercises)
-        .bind("newProblem", renderReadOnlyProblem);
+$(Exercises).bind("newProblem", renderReadOnlyProblem);
 
 function renderReadOnlyProblem(event, args) {
-    var framework = Exercises.getCurrentFramework();
-
     var userExercise = args.userExercise;
     var answerData = args.answerData;
-    var answerType = args.answerType;
-    var solution = args.solution;
     var hints = args.hints;
     var problem = args.problem;
 
@@ -21,24 +26,17 @@ function renderReadOnlyProblem(event, args) {
 
     if (typeof userExercise !== "undefined" && userExercise.readOnly) {
 
-        if (framework === "perseus") {
-            $(Exercises).trigger("warning", [$._("Problem history is " +
-                    "not yet available for this exercise."), true]);
-        } else if (framework === "khan-exercises") {
-            if (!userExercise.current) {
-                $(Exercises).trigger("warning", [$._("This exercise may have " +
-                    "changed since it was completed"), true]);
-            }
-        }
+        $(Exercises).trigger("warning", [i18n._("Problem history is " +
+                "not yet available for this exercise."), true]);
 
         var timelineEvents, timeline;
 
         var timelinecontainer = $("<div id='timelinecontainer'>")
             .append("<div>\n" +
                     "<div id='previous-problem' class='simple-button'>" +
-                    $._("Previous Problem") + "</div>\n" +
+                    i18n._("Previous Problem") + "</div>\n" +
                     "<div id='previous-step' class='simple-button'><span>" +
-                    $._("Previous Step") + "</span></div>\n</div>")
+                    i18n._("Previous Step") + "</span></div>\n</div>")
             .insertBefore("#problem-and-answer");
 
         $.fn.disable = function() {
@@ -99,11 +97,11 @@ function renderReadOnlyProblem(event, args) {
         timelinecontainer
             .append("<div>\n" +
                     "<div id='next-problem' class='simple-button'>" +
-                    $._("Next Problem") + "</div>\n" +
+                    i18n._("Next Problem") + "</div>\n" +
                     "<div id='next-step' class='simple-button'><span>" +
-                    $._("Next Step") + "</span></div>\n</div>");
+                    i18n._("Next Step") + "</span></div>\n</div>");
 
-        $("<div class='user-activity correct-activity'>" + $._("Started") + "</div>")
+        $("<div class='user-activity correct-activity'>" + i18n._("Started") + "</div>")
             .data("hint", false)
             .appendTo(timelineEvents);
 
@@ -121,17 +119,17 @@ function renderReadOnlyProblem(event, args) {
 
             timelineEvents
                 // I18N: This is a number of seconds, like '3s'
-                .append("<div class='timeline-time'>" + $._("%(time)ss", {time: value[2]}) + "</div>");
+                .append("<div class='timeline-time'>" + i18n._("%(time)ss", {time: value[2]}) + "</div>");
 
             thissolutionarea = $("<div>")
                 .addClass("user-activity " + value[0])
                 .appendTo(timelineEvents);
 
             if (value[0] === "hint-activity") {
-                thissolutionarea.attr("title", $._("Hint used"));
+                thissolutionarea.attr("title", i18n._("Hint used"));
                 thissolutionarea
                     .data("hint", hintNumber)
-                    .prepend($._("Hint #%(num)s", {num: (hintNumber + 1)}));
+                    .prepend(i18n._("Hint #%(num)s", {num: (hintNumber + 1)}));
                 hintNumber += 1;
             } else { // This panel is a solution (or the first panel)
                 thissolutionarea.data("hint", false);
@@ -139,75 +137,13 @@ function renderReadOnlyProblem(event, args) {
                 if (guess === "Activity Unavailable") {
                     thissolutionarea.text(guess);
                 } else {
-                    if (framework === "perseus") {
-                        thissolutionarea
-                            .removeClass("incorrect-activity")
-                            .addClass("correct-activity");
-                        thissolutionarea.attr("title", $._("Answer Attempted"));
-                        thissolutionarea.append(
-                            $("<p class='solution'>" + $._("Answer attempted") + "</p>")
-                        );
-                    } else if (framework === "khan-exercises") {
-                        // radio and custom are the only answer types that
-                        // can't display its own guesses in the activity bar
-                        var validator = Khan.answerTypes[answerType].setup(null, solution).validator;
-
-                        if (answerType === "radio") {
-                            thissolutionarea.append(
-                                // Add the guess to the activity bar
-                                // TODO(emily): remove this
-                                // backwards-compatible code in 7/13
-                                $("<p class='solution'>" +
-                                  (guess.value != null ? guess.value : guess) +
-                                  "</p>").runModules()
-                            );
-                            if (validator(guess).correct) {
-                                thissolutionarea
-                                    .removeClass("incorrect-activity")
-                                    .addClass("correct-activity");
-                                thissolutionarea.attr("title", $._("Correct Answer"));
-                            } else {
-                                thissolutionarea.attr("title", $._("Incorrect Answer"));
-                            }
-                        } else if (answerType === "custom") {
-                            if (validator(guess).correct) {
-                                thissolutionarea
-                                    .removeClass("incorrect-activity")
-                                    .addClass("correct-activity");
-                                thissolutionarea.attr("title", $._("Correct Answer"));
-                                thissolutionarea.append(
-                                    $("<p class='solution'>" + $._("Answer correct") + "</p>")
-                                );
-                            } else {
-                                thissolutionarea
-                                    .removeClass("correct-activity")
-                                    .addClass("incorrect-activity");
-                                thissolutionarea.attr("title", $._("Incorrect Answer"));
-                                thissolutionarea.append(
-                                    $("<p class='solution'>" + $._("Answer incorrect") + "</p>")
-                                );
-                            }
-                        } else {
-                            var thisAnswerData = Khan.answerTypes[answerType].setup(thissolutionarea, solution);
-
-                            thisAnswerData.showGuess(guess);
-
-                            if (thisAnswerData.validator(guess).correct) {
-                                // If the user didn't get the problem right on the first try, all
-                                // answers are labelled incorrect by default
-                                thissolutionarea
-                                    .removeClass("incorrect-activity")
-                                    .addClass("correct-activity");
-
-                                thissolutionarea.attr("title", $._("Correct Answer"));
-                            } else {
-                                thissolutionarea
-                                    .removeClass("correct-activity")
-                                    .addClass("incorrect-activity");
-                                thissolutionarea.attr("title", $._("Incorrect Answer"));
-                            }
-                        }
-                    }
+                    thissolutionarea
+                        .removeClass("incorrect-activity")
+                        .addClass("correct-activity");
+                    thissolutionarea.attr("title", i18n._("Answer Attempted"));
+                    thissolutionarea.append(
+                        $("<p class='solution'>" + i18n._("Answer attempted") + "</p>")
+                    );
 
                     thissolutionarea
                         .data("guess", guess)
@@ -227,9 +163,7 @@ function renderReadOnlyProblem(event, args) {
         var states = timelineEvents.children(".user-activity"),
             currentSlide = Math.min(states.length - 1, 1),
             numSlides = states.length,
-            timelineMiddle = timeline.width() / 2,
             realHintsArea = $("#hintsarea"),
-            realWorkArea = $("#workarea"),
             statelist = [],
             previousHintNum = 100000;
 
@@ -260,7 +194,7 @@ function renderReadOnlyProblem(event, args) {
             // This thing looks ridiculous above about 100px
             if (maxHeight > 100) {
                 timelineEvents.children(".correct-activity, .incorrect-activity").each(function() {
-                    $(this).text($._("Answer"));
+                    $(this).text(i18n._("Answer"));
                 });
             } else if (maxHeight > timelinecontainer.height()) {
                 timelinecontainer.height(maxHeight);
@@ -269,61 +203,12 @@ function renderReadOnlyProblem(event, args) {
         });
 
         var create = function(i) {
-            var thisSlide = states.eq(i);
-
-            var thisHintArea, thisProblem,
-                hintNum = $("#timeline-events .user-activity:lt(" + (i + 1) + ")")
-                        .filter(".hint-activity").length - 1,
-                // Bring the currently focused panel as close to the middle as possible
-                itemOffset = thisSlide.position().left,
-                itemMiddle = itemOffset + thisSlide.width() / 2,
-                offset = timelineMiddle - itemMiddle,
-                currentScroll = timeline.scrollLeft(),
-                timelineMax = states.eq(-1).position().left + states.eq(-1).width() + 5,
-                scroll = Math.min(currentScroll - offset, currentScroll + timelineMax - timeline.width() + 25);
+            var hintNum = $("#timeline-events .user-activity:lt(" + (i + 1) + ")")
+                        .filter(".hint-activity").length - 1;
 
             if (hintNum >= 0) {
                 $(hints[hintNum]).appendTo(realHintsArea).runModules(problem);
             }
-
-            MathJax.Hub.Queue(function() {
-                var recordState = function() {
-                    $("#problemarea input").attr({disabled: "disabled"});
-                    thisHintArea = realHintsArea.clone();
-                    thisProblem = realWorkArea.clone();
-
-                    var thisState = {
-                        slide: thisSlide,
-                        hintNum: hintNum,
-                        hintArea: thisHintArea,
-                        problem: thisProblem,
-                        scroll: scroll
-                    };
-
-                    statelist[i] = thisState;
-
-                    if (i + 1 < states.length) {
-                        // Create the next state
-                        MathJax.Hub.Queue(function() {
-                            create(i + 1);
-                        });
-                    } else {
-                        // Scroll to the starting state
-                        activate(currentSlide);
-                    }
-                };
-
-                if (framework === "khan-exercises") {
-                    if (thisSlide.data("guess") !== undefined && _.isFunction(answerData.showCustomGuess)) {
-                        KhanUtil.currentGraph = $(realWorkArea).find(".graphie").data("graphie");
-                        answerData.showCustomGuess(thisSlide.data("guess"));
-                        MathJax.Hub.Queue(recordState);
-                    } else {
-                        recordState();
-                    }
-                }
-
-            });
         };
 
         var activate = function(slideNum) {
@@ -349,8 +234,6 @@ function renderReadOnlyProblem(event, args) {
                 } else {
                     answerData.showGuess();
                 }
-                // fire the "show guess" event
-                $(Khan).trigger("showGuess");
 
                 // TODO: still highlight even if hint modifies problem (and highlight following hints)
                 if (slideNum > 0 && (thisState.hintNum > statelist[slideNum - 1].hintNum)) {
@@ -441,11 +324,9 @@ function renderReadOnlyProblem(event, args) {
         $("#answercontent input").attr("disabled", true);
         $("#answercontent select").attr("disabled", true);
 
-        if (framework === "perseus") {
-            // TODO(cbhl): Implement Problem History for Perseus, then remove
-            // this hack.
-            timelinecontainer.hide();
-        }
+        // TODO(cbhl): Implement Problem History for Perseus, then remove
+        // this hack.
+        timelinecontainer.hide();
     }
 }
 

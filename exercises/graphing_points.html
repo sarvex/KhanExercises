@@ -131,7 +131,9 @@
                                         }, function() {
                                             line( [ X, 0 ], [ X, Y ] );
                                         });
-                                        graph.movablePoint.toFront();
+                                        if (graph.point) {
+                                            graph.point.toFront();
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -150,7 +152,9 @@
                                     line( [ X - 0.25, Y - 0.25 ], [ X + 0.25, Y + 0.25 ] );
                                     line( [ X + 0.25, Y - 0.25 ], [ X - 0.25, Y + 0.25 ] );
                                 });
-                                graph.movablePoint.toFront();
+                                if (graph.point) {
+                                    graph.point.toFront();
+                                }
                             </div>
                         </div>
                     </div>
@@ -307,7 +311,7 @@
                     </div>
 
                     <div class="question">
-                        <p>What is the coordinate of the point plotted below?</p>
+                        <p>What are the coordinates of the point plotted below?</p>
                     </div>
 
                     <div class="render-answer-area-here"></div>
@@ -364,7 +368,7 @@
                             </div>
                         </div>
 
-                        <p>So the coordinate is <code>(\pink{<var>X</var>}, \green{<var>Y</var>})</code>.</p>
+                        <p>So the coordinates are <code>(\pink{<var>X</var>}, \green{<var>Y</var>})</code>.</p>
 
                     </div>
                 </div>

@@ -1,3 +1,7 @@
+/* TODO(csilvers): fix these lint errors (http://eslint.org/docs/rules): */
+/* eslint-disable comma-dangle, comma-spacing, indent, max-len, no-constant-condition, no-redeclare, no-undef, no-var, one-var, prefer-spread, space-infix-ops */
+/* To fix, remove an entry above, run ka-lint, and fix errors. */
+
 define(function(require) {
 
 // Minify Raphael ourselves because IE8 has a problem with the 1.5.2 minified release
@@ -89,10 +93,10 @@ $.extend(KhanUtil, {
         return digits;
     },
 
-    placesLeftOfDecimal: [$._("one"), $._("ten"), $._("hundred"),
-        $._("thousand")],
-    placesRightOfDecimal: [$._("one"), $._("tenth"), $._("hundredth"),
-        $._("thousandth"),$._("ten thousandth")],
+    placesLeftOfDecimal: [i18n._("one"), i18n._("ten"), i18n._("hundred"),
+        i18n._("thousand")],
+    placesRightOfDecimal: [i18n._("one"), i18n._("tenth"), i18n._("hundredth"),
+        i18n._("thousandth"),i18n._("ten thousandth")],
 
     powerToPlace: function(power) {
         if (power < 0) {
@@ -682,16 +686,65 @@ $.extend(KhanUtil, {
     GRAY70: "#4D4D4D",
     GRAY80: "#333333",
     GRAY90: "#1A1A1A",
+    BLUE_A: "#CCFAFF",
+    BLUE_B: "#80F6FF",
+    BLUE_C: "#63D9EA",
+    BLUE_D: "#11ACCD",
+    BLUE_E: "#0C7F99",
+    TEAL_A: "#94FFF5",
+    TEAL_B: "#26EDD5",
+    TEAL_C: "#01D1C1",
+    TEAL_D: "#01A995",
+    TEAL_E: "#208170",
+    GREEN_A: "#B6FFB0",
+    GREEN_B: "#8AF281",
+    GREEN_C: "#74CF70",
+    GREEN_D: "#1FAB54",
+    GREEN_E: "#0D923F",
+    GOLD_A: "#FFD0A9",
+    GOLD_B: "#FFBB71",
+    GOLD_C: "#FF9C39",
+    GOLD_D: "#E07D10",
+    GOLD_E: "#A75A05",
+    RED_A: "#FCA9A9",
+    RED_B: "#FF8482",
+    RED_C: "#F9685D",
+    RED_D: "#E84D39",
+    RED_E: "#BC2612",
+    MAROON_A: "#FFBDE0",
+    MAROON_B: "#FF92C6",
+    MAROON_C: "#ED5FA6",
+    MAROON_D: "#CA337C",
+    MAROON_E: "#9E034E",
+    PURPLE_A: "#DDD7FF",
+    PURPLE_B: "#C6B9FC",
+    PURPLE_C: "#AA87FF",
+    PURPLE_D: "#7854AB",
+    PURPLE_E: "#543B78",
+    MINT_A: "#F5F9E8",
+    MINT_B: "#EDF2DF",
+    MINT_C: "#E0E5CC",
+    GRAY_A: "#F6F7F7",
+    GRAY_B: "#F0F1F2",
+    GRAY_C: "#E3E5E6",
+    GRAY_D: "#D6D8DA",
+    GRAY_E: "#BABEC2",
+    GRAY_F: "#888D93",
+    GRAY_G: "#626569",
+    GRAY_H: "#3B3E40",
+    GRAY_I: "#21242C",
+    KA_BLUE: "#314453",
+    KA_GREEN: "#71B307",
     // Don't actually use _BACKGROUND! Make things transparent instead. The
     // background color used in exercises is subject to change at the whim
-    // of fickle designers.
-    _BACKGROUND: "#FDFDFD"  // TODO(eater): Get rid of this altogether.
+    // of any redesigns.
+    _BACKGROUND: "#FDFDFD",  // TODO(eater): Get rid of this altogether.
 });
 
 // For consistent coloring throughout Perseus
 $.extend(KhanUtil, {
-    INTERACTING: KhanUtil.ORANGE,
-    INTERACTIVE: KhanUtil.ORANGE,
+    INTERACTING: KhanUtil.KA_GREEN,
+    INTERACTIVE: KhanUtil.KA_GREEN,
     DYNAMIC: KhanUtil.BLUE
 });
 

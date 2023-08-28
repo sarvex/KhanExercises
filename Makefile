@@ -1,4 +1,4 @@
-.FAKE: pack packed lint fix_lint
+.FAKE: serve pack packed lint fix_lint
 
 # This needs 'npm' on your system, to install jison.
 # The output file has to be named 'Calculator' because that's how jison
@@ -11,11 +11,21 @@ genfiles/calculator.js: build/calculator/calculator.jison build/calculator/calcu
 	mv genfiles/Calculator.js genfiles/calculator.js
 
 
+serve:
+	python -m SimpleHTTPServer
+
+
+check:
+	echo "Run 'make serve' then visit http://localhost:8000/test"
+
+
+deps:
+	npm install
+
 # Pack all files in exercises/ into exercises-packed/, unless the one
 # in exercises-packed is newer.
-# This needs 'bundle' on your system, to install needed ruby modules.
 pack packed: deps
-	args=`cd exercises && find * -name '*.html' | while read infile; do outfile="../exercises-packed/$$infile"; echo "$$outfile" | xargs dirname | xargs mkdir -p; [ "$$outfile" -nt "$$infile" ] || echo "exercises/$$infile::exercises-packed/$$infile"; done`; echo "$$args" | tr ' ' '\012'; [ -z "$$args" ] || env LC_ALL=en_US.UTF-8 bundle exec ruby build/pack.rb $$args
+	args=`cd exercises && find * -name '*.html' | while read infile; do outfile="../exercises-packed/$$infile"; echo "$$outfile" | xargs dirname | xargs mkdir -p; [ "$$outfile" -nt "$$infile" ] || echo "exercises/$$infile::exercises-packed/$$infile"; done`; echo "$$args" | tr ' ' '\012'; [ -z "$$args" ] || node build/pack.js $$args
 
 
 # These need 'pip' on your system, to install lxml/etc.

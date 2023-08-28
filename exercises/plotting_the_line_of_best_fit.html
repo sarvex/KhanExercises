@@ -183,11 +183,11 @@
                 }</var>
             </div>
 
-            <p class="question">In the graph below, can a line fit the data well?</p>
-
-            <p class="render-answer-area-here"></p>
-
-            <p class="question">If yes, fit a line to the data.</p>
+            <div class="question">
+                <p>In the graph below, can a line fit the data well?</p>
+                <p class="render-answer-area-here"></p>
+                <p class="question">If yes, fit a line to the data.</p>
+            </div>
 
             <div class="problem">
                 <div class="graphie" id="main">
@@ -365,7 +365,7 @@
 
                             line([-5, -4], [5, -3], { stroke: BLUE });
 
-                            label([0, 4], $._("Bad"), "center", false)
+                            label([0, 4], i18n._("Bad"), "center", false)
                                 .css("color", "red")
                                 .css("font-size", "20px");
                         </div>
@@ -380,7 +380,7 @@
 
                             line([-5, -2.5], [5, -1.5], { stroke: BLUE });
 
-                            label([0, 4], $._("Okay"), "center", false)
+                            label([0, 4], i18n._("Okay"), "center", false)
                                 .css("color", "orange")
                                 .css("font-size", "20px");
                         </div>
@@ -402,7 +402,7 @@
 
                             line([-5, -2.5], [5, -1.5], { stroke: BLUE });
 
-                            label([0, 4], $._("Okay"), "center", false)
+                            label([0, 4], i18n._("Okay"), "center", false)
                                 .css("color", "orange")
                                 .css("font-size", "20px");
                         </div>
@@ -417,7 +417,7 @@
 
                             line([-5, -3.5], [3, 5], { stroke: BLUE });
 
-                            label([0, 4], $._("Better"), "center", false)
+                            label([0, 4], i18n._("Better"), "center", false)
                                 .css("color", "#8EEB00")
                                 .css("font-size", "20px");
                         </div>
@@ -438,7 +438,7 @@
 
                             line([-5, -3.5], [3, 5], { stroke: BLUE });
 
-                            label([0, 4], $._("Better"), "center", false)
+                            label([0, 4], i18n._("Better"), "center", false)
                                 .css("color", "#9FEE00")
                                 .css("font-size", "20px");
                         </div>
@@ -453,7 +453,7 @@
 
                             line([-4, -5], [3, 5], { stroke: BLUE });
 
-                            label([0, 4], $._("Good"), "center", false)
+                            label([0, 4], i18n._("Good"), "center", false)
                                 .css("color", "#00C322")
                                 .css("font-size", "20px");
                         </div>
@@ -483,13 +483,13 @@
                         <li>
                             <label>
                                 <input id="exists" checked name="nonlinear" onclick="KhanUtil.graphs.main.graph.showLine()" type="radio">
-                                <span>A line fits the data well</span>
+                                <span>Yes</span>
                             </label>
                         </li>
                         <li>
                             <label>
                                 <input id="notexists" name="nonlinear" onclick="KhanUtil.graphs.main.graph.hideLine()" type="radio">
-                                <span>No line fits the data well</span>
+                                <span>No</span>
                             </label>
                         </li>
                     </ul>
@@ -564,13 +564,13 @@
                         <li>
                             <label>
                                 <input id="exists" checked name="nonlinear" onclick="KhanUtil.graphs.main.graph.showLine()" type="radio">
-                                <span>A line fits the data well</span>
+                                <span>Yes</span>
                             </label>
                         </li>
                         <li>
                             <label>
                                 <input id="notexists" name="nonlinear" onclick="KhanUtil.graphs.main.graph.hideLine()" type="radio">
-                                <span>No line fits the data well</span>
+                                <span>No</span>
                             </label>
                         </li>
                     </ul>
@@ -643,13 +643,13 @@
                         <li>
                             <label>
                                 <input id="exists" checked name="nonlinear" onclick="KhanUtil.graphs.main.graph.showLine()" type="radio">
-                                <span>A line fits the data well</span>
+                                <span>Yes</span>
                             </label>
                         </li>
                         <li>
                             <label>
                                 <input id="notexists" name="nonlinear" onclick="KhanUtil.graphs.main.graph.hideLine()" type="radio">
-                                <span>No line fits the data well</span>
+                                <span>No</span>
                             </label>
                         </li>
                     </ul>
