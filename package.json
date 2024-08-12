@@ -10,7 +10,7 @@
         "url": "http://github.com/Khan/khan-exercises/"
     },
     "devDependencies": {
-        "cheerio": "^0.22.0",
+        "cheerio": "^1.0.0",
         "jison": "0.4.18",
         "jshint": "^2.9.6",
         "uglify-js": "3.17.4"
